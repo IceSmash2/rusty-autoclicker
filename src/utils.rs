@@ -1,7 +1,7 @@
 use std::{env, thread, time::Duration};
 
 use eframe::emath::Numeric;
-use rand::{Rng, prelude::ThreadRng};
+use rand::{RngExt, prelude::ThreadRng};
 use rdev::{EventType, SimulateError, simulate};
 use sanitizer::prelude::StringSanitizer;
 

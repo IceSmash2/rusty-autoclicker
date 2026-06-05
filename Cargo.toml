@@ -20,7 +20,7 @@ eframe = { version = "0.34.3", default-features = false, features = [
 ] }
 image = "0.25"
 native-dialog = "0.9"
-rand = "0.9"
+rand = "0.10.1"
 rdev = "0.5"
 sanitizer = { version = "0.1.7", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"], optional = true }

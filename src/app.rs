@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-use device_query::Keycode;
+use device_query::{Keycode, MouseState};
 use eframe::{egui, epaint::FontId};
 use rand::{prelude::ThreadRng, rng};
 use rdev::Button;
@@ -57,6 +57,10 @@ pub struct RustyAutoClickerApp {
     pub key_pressed_esc: bool,
     pub keys_pressed: Option<Vec<Keycode>>,
 
+    // Mouse snapshot (polled in `logic`, displayed in `ui`)
+    #[cfg_attr(feature = "persistence", serde(skip))]
+    pub mouse: MouseState,
+
     // Enums
     pub click_btn: ClickButton,
     pub click_type: ClickType,
@@ -109,6 +113,9 @@ impl Default for RustyAutoClickerApp {
             key_pressed_esc: false,
             keys_pressed: None,
 
+            // Mouse snapshot
+            mouse: MouseState::default(),
+
             // Enums
             click_btn: ClickButton::Mouse(Button::Left),
             click_type: ClickType::Single,
@@ -124,13 +131,13 @@ impl RustyAutoClickerApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         let ctx = &cc.egui_ctx;
 
-        let mut style = (*ctx.style()).clone();
+        let mut style = (*ctx.global_style()).clone();
         let font = FontId {
             size: FONT_SIZE,
             family: FONT_FAMILY,
         };
         style.override_font_id = Some(font);
-        ctx.set_style(style);
+        ctx.set_global_style(style);
 
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.

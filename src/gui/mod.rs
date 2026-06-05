@@ -24,9 +24,8 @@ impl eframe::App for RustyAutoClickerApp {
         eframe::set_value(storage, eframe::APP_KEY, self);
     }
 
-    /// Called each time the UI needs repainting, which may be many times per second.
-    /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    /// Runs every pass, including while the window is hidden/minimized, as long as a repaint was requested.
+    fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // Print time to between start of old and new frames
         #[cfg(debug_assertions)]
         println!(
@@ -42,6 +41,9 @@ impl eframe::App for RustyAutoClickerApp {
         let device_state = DeviceState::new();
         let mouse = device_state.get_mouse();
         let keys = device_state.get_keys();
+
+        // Snapshot mouse state so `ui` can display it while all polling stays in `logic`
+        self.mouse = mouse.clone();
 
         // Input sanitation
         sanitize_string(&mut self.hr_str, 5usize);
@@ -201,8 +203,27 @@ impl eframe::App for RustyAutoClickerApp {
             self.hotkey_window_open = true
         }
 
+        // Keep updating frame
+        ctx.request_repaint();
+
+        // Print time to process frame
+        #[cfg(debug_assertions)]
+        println!(
+            "Frame time: {:?}",
+            Instant::now()
+                .checked_duration_since(self.frame_start)
+                .unwrap()
+        );
+    }
+
+    /// Called each time the UI needs repainting, but only while the window is visible.
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        // Cheap `Arc`-handle clone of the context so helpers/windows can use it without
+        // conflicting with the `&mut ui` borrows taken by `show_inside`.
+        let ctx = ui.ctx().clone();
+
         if self.is_setting_coord {
-            egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+            egui::Panel::top("top_panel").show_inside(ui, |ui| {
                 egui::MenuBar::new().ui(ui, |ui| {
                     ui.horizontal_wrapped(|ui| {
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {
@@ -233,13 +254,16 @@ impl eframe::App for RustyAutoClickerApp {
                     });
                 })
             });
-            Self::follow_cursor(self, ctx);
+            Self::follow_cursor(self, &ctx);
         } else {
             // GUI
-            // Top panel with menu bar
-            self.show_topbar(ctx);
+            // Top and bottom panels first so the central panel fills the remaining space
+            self.show_topbar(ui);
+            self.show_bottombar(ui);
 
-            egui::CentralPanel::default().show(ctx, |ui| {
+            let click_amount: u64 = self.click_amount_str.parse().unwrap_or_default();
+
+            egui::CentralPanel::default().show_inside(ui, |ui| {
                 // The central panel the region left after adding TopPanel's and SidePanel's
                 self.show_click_interval(ui);
                 ui.separator();
@@ -251,31 +275,17 @@ impl eframe::App for RustyAutoClickerApp {
                 ui.separator();
                 self.show_click_amount(ui, click_amount);
                 ui.separator();
-                self.show_click_position(ui, ctx);
+                self.show_click_position(ui, &ctx);
                 ui.separator();
-                self.show_infos(ui, &mouse, &keys);
+                self.show_infos(ui, &self.mouse, self.keys_pressed.as_deref().unwrap_or(&[]));
                 ui.separator();
                 self.show_autoclicker(ui);
             });
-
-            self.show_bottombar(ctx);
         }
 
         // Hotkeys window
         if self.hotkey_window_open {
-            self.show_hotkeys_window(ctx);
+            self.show_hotkeys_window(&ctx);
         }
-
-        // Keep updating frame
-        ctx.request_repaint();
-
-        // Print time to process frame
-        #[cfg(debug_assertions)]
-        println!(
-            "Frame time: {:?}",
-            Instant::now()
-                .checked_duration_since(self.frame_start)
-                .unwrap()
-        );
     }
 }

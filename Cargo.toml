@@ -3,7 +3,7 @@ name = "rusty-autoclicker"
 version = "2.4.0"
 repository = "https://github.com/MrTanoshii/rusty-autoclicker"
 readme = "README.md"
-rust-version = "1.85"
+rust-version = "1.96"
 license-file = "LICENSE"
 edition = "2024"
 
@@ -11,7 +11,7 @@ edition = "2024"
 
 [dependencies]
 device_query = "4.0.1"
-eframe = { version = "0.32", default-features = false, features = [
+eframe = { version = "0.34.3", default-features = false, features = [
     "accesskit",
     "default_fonts",
     "wgpu",

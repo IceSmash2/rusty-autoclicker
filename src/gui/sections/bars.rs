@@ -3,8 +3,8 @@ use eframe::egui::{self};
 use crate::{RustyAutoClickerApp, types::AppMode};
 
 impl RustyAutoClickerApp {
-    pub fn show_topbar(&mut self, ctx: &egui::Context) {
-        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+    pub fn show_topbar(&mut self, ui: &mut egui::Ui) {
+        egui::Panel::top("top_panel").show_inside(ui, |ui| {
             // The top panel is often a good place for a menu bar:
             egui::MenuBar::new().ui(ui, |ui| {
                 if self.is_autoclicking {
@@ -55,8 +55,8 @@ impl RustyAutoClickerApp {
         });
     }
 
-    pub fn show_bottombar(&mut self, ctx: &egui::Context) {
-        egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
+    pub fn show_bottombar(&mut self, ui: &mut egui::Ui) {
+        egui::Panel::bottom("bottom_panel").show_inside(ui, |ui| {
             ui.with_layout(egui::Layout::bottom_up(egui::Align::RIGHT), |ui| {
                 ui.horizontal(|ui| {
                     ui.spacing_mut().item_spacing.x = 5.0;

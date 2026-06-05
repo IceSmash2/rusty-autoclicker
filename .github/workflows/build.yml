@@ -1,0 +1,48 @@
+name: Build
+
+# Reusable build workflow. Called by the per-OS workflows (linux_build.yml,
+# macos_build.yml, windows_build.yml) so the build steps live in one place while
+# each caller keeps its own status badge.
+on:
+  workflow_call:
+    inputs:
+      os:
+        description: Runner to build on (e.g. ubuntu-latest)
+        required: true
+        type: string
+      target:
+        description: Rust target triple to build
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: ${{ inputs.target }}
+    runs-on: ${{ inputs.os }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
+        with:
+          toolchain: "1.96" # matches Cargo.toml rust-version
+          target: ${{ inputs.target }}
+      - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+
+      - name: Setup dependencies [Linux]
+        if: inputs.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          # device_query
+          sudo apt-get --assume-yes install libx11-dev
+          # rdev
+          sudo apt-get --assume-yes install libxtst-dev libevdev-dev
+          # eframe
+          sudo apt-get --assume-yes install libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libspeechd-dev libxkbcommon-dev libssl-dev
+
+      - name: Build
+        run: cargo build --verbose --target ${{ inputs.target }}

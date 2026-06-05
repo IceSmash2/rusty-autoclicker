@@ -4,10 +4,11 @@
 
 [![Latest Version](https://img.shields.io/github/v/tag/MrTanoshii/rusty-autoclicker.svg?label=Version&sort=semver&color=orange)](https://github.com/MrTanoshii/rusty-autoclicker/releases)
 [![CC0-1.0 License](https://img.shields.io/badge/License-CC0--1.0-blue)](https://github.com/MrTanoshii/rusty-autoclicker/blob/main/LICENSE)
-[![Rust Check](https://github.com/MrTanoshii/rusty-autoclicker/actions/workflows/rust_check.yml/badge.svg)](https://github.com/MrTanoshii/rusty-autoclicker/actions/workflows/rust_check.yml)
-[![Linux Build](https://github.com/MrTanoshii/rusty-autoclicker/actions/workflows/linux_build.yml/badge.svg)](https://github.com/MrTanoshii/rusty-autoclicker/actions/workflows/linux_build.yml)
-[![macOS Build](https://github.com/MrTanoshii/rusty-autoclicker/actions/workflows/macos_build.yml/badge.svg)](https://github.com/MrTanoshii/rusty-autoclicker/actions/workflows/macos_build.yml)
-[![Windows Build](https://github.com/MrTanoshii/rusty-autoclicker/actions/workflows/windows_build.yml/badge.svg)](https://github.com/MrTanoshii/rusty-autoclicker/actions/workflows/windows_build.yml)
+[![MSRV](https://img.shields.io/badge/rustc-1.96+-blue)](https://github.com/MrTanoshii/rusty-autoclicker/blob/main/Cargo.toml)
+[![Rust Check](https://github.com/MrTanoshii/rusty-autoclicker/actions/workflows/rust_check.yml/badge.svg?branch=main)](https://github.com/MrTanoshii/rusty-autoclicker/actions/workflows/rust_check.yml)
+[![Linux Build](https://github.com/MrTanoshii/rusty-autoclicker/actions/workflows/linux_build.yml/badge.svg?branch=main)](https://github.com/MrTanoshii/rusty-autoclicker/actions/workflows/linux_build.yml)
+[![macOS Build](https://github.com/MrTanoshii/rusty-autoclicker/actions/workflows/macos_build.yml/badge.svg?branch=main)](https://github.com/MrTanoshii/rusty-autoclicker/actions/workflows/macos_build.yml)
+[![Windows Build](https://github.com/MrTanoshii/rusty-autoclicker/actions/workflows/windows_build.yml/badge.svg?branch=main)](https://github.com/MrTanoshii/rusty-autoclicker/actions/workflows/windows_build.yml)
 
 </div>
 

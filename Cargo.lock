@@ -3694,9 +3694,9 @@ dependencies = [
 
 [[package]]
 name = "sanitizer"
-version = "0.1.7"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "883031f239b3484ed3118326f43da0bb922151a4542c0576d2a248f7a6099a0c"
+checksum = "41684976b931a3a2b411584f61bcd481b07fa345d007d8805f3ef8111ba6823e"
 dependencies = [
  "heck",
  "num-traits",
@@ -3707,9 +3707,9 @@ dependencies = [
 
 [[package]]
 name = "sanitizer_macros"
-version = "0.2.2"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b514b45db36d69fa5a93f2b11c6aa682654eaccda5bf09062d3e639f4c2bd0c5"
+checksum = "5ac70deec45bd293a88b903c31ac9931618c4145dba3657a038e50b40756f0d5"
 dependencies = [
  "proc-macro2",
  "quote",

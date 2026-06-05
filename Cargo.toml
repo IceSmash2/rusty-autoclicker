@@ -22,7 +22,7 @@ image = "0.25"
 native-dialog = "0.9"
 rand = "0.10.1"
 rdev = "0.5"
-sanitizer = { version = "0.1.7", features = ["derive"] }
+sanitizer = { version = "1.0.0", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"], optional = true }
 wgpu = { version = "25.0", default-features = false, features = ["vulkan", "dx12", "metal"] }
 

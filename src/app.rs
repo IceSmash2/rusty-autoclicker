@@ -10,12 +10,7 @@ use crate::{
     types::{AppMode, ClickButton, ClickPosition, ClickType},
 };
 
-/// We derive Deserialize/Serialize so we can persist app state on shutdown.
-#[cfg_attr(feature = "persistence", derive(serde::Deserialize, serde::Serialize))]
-#[cfg_attr(feature = "persistence", serde(default))] // if we add new fields, give them default values when deserializing old state
 pub struct RustyAutoClickerApp {
-    // this how you opt-out of serialization of a member
-    #[cfg_attr(feature = "persistence", serde(skip))]
     // Text input strings
     pub hr_str: String,
     pub min_str: String,
@@ -58,7 +53,6 @@ pub struct RustyAutoClickerApp {
     pub keys_pressed: Option<Vec<Keycode>>,
 
     // Mouse snapshot (polled in `logic`, displayed in `ui`)
-    #[cfg_attr(feature = "persistence", serde(skip))]
     pub mouse: MouseState,
 
     // Enums
@@ -138,13 +132,6 @@ impl RustyAutoClickerApp {
         };
         style.override_font_id = Some(font);
         ctx.set_global_style(style);
-
-        // Load previous app state (if any).
-        // Note that you must enable the `persistence` feature for this to work.
-        #[cfg(feature = "persistence")]
-        if let Some(storage) = cc.storage {
-            return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
-        }
 
         Default::default()
     }

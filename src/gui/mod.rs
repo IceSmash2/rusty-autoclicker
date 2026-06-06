@@ -17,13 +17,6 @@ impl eframe::App for RustyAutoClickerApp {
         egui::Rgba::TRANSPARENT.to_array() // Make sure we don't paint anything behind the rounded corners
     }
 
-    /// Called by the frame work to save state before shutdown.
-    /// Note that you must enable the `persistence` feature for this to work.
-    #[cfg(feature = "persistence")]
-    fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        eframe::set_value(storage, eframe::APP_KEY, self);
-    }
-
     /// Runs every pass, including while the window is hidden/minimized, as long as a repaint was requested.
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // Print time to between start of old and new frames

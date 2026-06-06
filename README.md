@@ -56,7 +56,6 @@ Features that currently are or will be implemented.
 - [x] Left/Middle/Right mouse clicks
 - [x] Single/Double mouse clicks
 - [x] User customizable hotkeys
-- [ ] Data persistence (e.g. Custom hotkeys, coordinates)
 - [ ] Options (e.g. Display mouse & key info)
 
 ### Advanced features

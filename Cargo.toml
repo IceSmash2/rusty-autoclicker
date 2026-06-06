@@ -23,17 +23,9 @@ native-dialog = "0.9"
 rand = "0.10.1"
 rdev = "0.5"
 sanitizer = { version = "1.0.0", default-features = false }
-serde = { version = "1.0", features = ["derive"], optional = true }
 
 [build-dependencies]
 winresource = "0.1"
-
-[features]
-default = []
-persistence = [
-    "eframe/persistence",
-    "serde",
-] # Enable if you want to persist app state on shutdown
 
 [profile.release]
 opt-level = 3 # all optimizations

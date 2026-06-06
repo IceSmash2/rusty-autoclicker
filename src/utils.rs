@@ -11,7 +11,7 @@ use crate::{
         DURATION_DOUBLE_CLICK_MIN, MOUSE_STEP_NEG_X, MOUSE_STEP_NEG_Y, MOUSE_STEP_POS_X,
         MOUSE_STEP_POS_Y,
     },
-    types::{AppMode, ClickButton, ClickInfo, ClickPosition, ClickType},
+    types::{AppMode, ClickButton, ClickInfo, ClickPosition},
 };
 
 /// Load icon from memory and return it
@@ -81,6 +81,16 @@ fn truncate_string(string: &mut String, max_length: usize) {
     };
 }
 
+/// Click interval in milliseconds from the hour/minute/second/millisecond values.
+pub const fn interval_ms(hr: u64, min: u64, sec: u64, ms: u64) -> u64 {
+    (hr * 3_600_000) + (min * 60_000) + (sec * 1_000) + ms
+}
+
+/// Mouse-movement delay in milliseconds from the second/millisecond values.
+pub const fn movement_delay_ms(sec: u64, ms: u64) -> u64 {
+    (sec * 1_000) + ms
+}
+
 /// Send the simulated event (`rdev` crate)
 ///
 /// # Arguments
@@ -100,60 +110,69 @@ fn send(event_type: &EventType) {
     }
 }
 
-/// Move the mouse to the specified coordinates
-/// Work if app is in "Humandlike" mode only
+/// [Humanlike] Move the mouse step-by-step from `start_coords` toward `click_coord`,
+/// pausing between steps.
 ///
 /// # Arguments
 ///
-/// * `app_mode` - The app mode
-/// * `click_position` - The click position type
 /// * `click_coord` - The click coordinates
 /// * `start_coords` - The starting mouse coordinates
 /// * `movement_delay_in_ms` - The delay between mouse movements in milliseconds
-fn move_to(
-    app_mode: AppMode,
-    click_position: ClickPosition,
-    click_coord: (f64, f64),
-    start_coords: (f64, f64),
-    movement_delay_in_ms: u64,
-) {
-    if app_mode == AppMode::Humanlike && click_position == ClickPosition::Coord {
-        // Move mouse slowly to saved coordinates if requested
-        let mut current_x = start_coords.0;
-        let mut current_y = start_coords.1;
-        loop {
-            // horizontal movement: determine whether we need to move left, right or not at all
-            let delta_x: f64 = if current_x < click_coord.0 {
-                MOUSE_STEP_POS_X.min(click_coord.0 - current_x)
-            } else if current_x > click_coord.0 {
-                MOUSE_STEP_NEG_X.max(click_coord.0 - current_x)
-            } else {
-                0.0
-            };
+fn move_to(click_coord: (f64, f64), start_coords: (f64, f64), movement_delay_in_ms: u64) {
+    // Move mouse slowly to saved coordinates if requested
+    let mut current_x = start_coords.0;
+    let mut current_y = start_coords.1;
+    loop {
+        // horizontal movement: determine whether we need to move left, right or not at all
+        let delta_x: f64 = if current_x < click_coord.0 {
+            MOUSE_STEP_POS_X.min(click_coord.0 - current_x)
+        } else if current_x > click_coord.0 {
+            MOUSE_STEP_NEG_X.max(click_coord.0 - current_x)
+        } else {
+            0.0
+        };
 
-            // vertical movement: determine whether we need to move up, down or not at all
-            let delta_y: f64 = if current_y < click_coord.1 {
-                MOUSE_STEP_POS_Y.min(click_coord.1 - current_y)
-            } else if current_y > click_coord.1 {
-                MOUSE_STEP_NEG_Y.max(click_coord.1 - current_y)
-            } else {
-                0.0
-            };
+        // vertical movement: determine whether we need to move up, down or not at all
+        let delta_y: f64 = if current_y < click_coord.1 {
+            MOUSE_STEP_POS_Y.min(click_coord.1 - current_y)
+        } else if current_y > click_coord.1 {
+            MOUSE_STEP_NEG_Y.max(click_coord.1 - current_y)
+        } else {
+            0.0
+        };
 
-            current_x += delta_x;
-            current_y += delta_y;
+        current_x += delta_x;
+        current_y += delta_y;
 
-            #[cfg(debug_assertions)]
-            println!("Moving by {delta_x:?} / {delta_y:?}, new pos: {current_x:?} / {current_y:?}");
-            send(&EventType::MouseMove {
-                x: current_x,
-                y: current_y,
-            });
+        #[cfg(debug_assertions)]
+        println!("Moving by {delta_x:?} / {delta_y:?}, new pos: {current_x:?} / {current_y:?}");
+        send(&EventType::MouseMove {
+            x: current_x,
+            y: current_y,
+        });
 
-            thread::sleep(Duration::from_millis(movement_delay_in_ms));
-            if current_x == click_coord.0 && current_y == click_coord.1 {
-                return;
+        thread::sleep(Duration::from_millis(movement_delay_in_ms));
+        if current_x == click_coord.0 && current_y == click_coord.1 {
+            return;
+        }
+    }
+}
+
+fn click_once(button: ClickButton, hold: Option<Duration>) {
+    match button {
+        ClickButton::Mouse(button) => {
+            send(&EventType::ButtonPress(button));
+            if let Some(hold) = hold {
+                thread::sleep(hold);
             }
+            send(&EventType::ButtonRelease(button));
+        }
+        ClickButton::Key(key) => {
+            send(&EventType::KeyPress(key));
+            if let Some(hold) = hold {
+                thread::sleep(hold);
+            }
+            send(&EventType::KeyRelease(key));
         }
     }
 }
@@ -174,14 +193,8 @@ pub fn autoclick(
     movement_delay_in_ms: u64,
     mut rng_thread: ThreadRng,
 ) {
-    // Set the amount of runs/clicks required
-    let run_amount: u8 = if click_info.click_type == ClickType::Single {
-        1
-    } else if click_info.click_type == ClickType::Double {
-        2
-    } else {
-        0
-    };
+    // Number of press/release cycles required
+    let run_amount = click_info.click_type.run_count();
 
     // Autoclick as fast as possible
     if app_mode == AppMode::Bot {
@@ -193,16 +206,7 @@ pub fn autoclick(
                     y: click_info.click_coord.1,
                 })
             }
-            match click_info.click_btn {
-                ClickButton::Mouse(button) => {
-                    send(&EventType::ButtonPress(button));
-                    send(&EventType::ButtonRelease(button));
-                }
-                ClickButton::Key(key) => {
-                    send(&EventType::KeyPress(key));
-                    send(&EventType::KeyRelease(key));
-                }
-            }
+            click_once(click_info.click_btn, None);
         }
     // Autoclick to emulate a humanlike clicks
     } else if app_mode == AppMode::Humanlike {
@@ -232,30 +236,93 @@ pub fn autoclick(
                 // only move if start pos and click pos are not identical
                 if click_x != mouse_coord.0.to_f64() || click_y != mouse_coord.1.to_f64() {
                     move_to(
-                        app_mode,
-                        click_info.click_position,
                         (click_x, click_y),
                         (mouse_coord.0.to_f64(), mouse_coord.1.to_f64()),
                         movement_delay_in_ms,
                     );
                 }
             }
-            match click_info.click_btn {
-                ClickButton::Mouse(button) => {
-                    send(&EventType::ButtonPress(button));
-                    thread::sleep(Duration::from_millis(
-                        rng_thread.random_range(DURATION_CLICK_MIN..DURATION_CLICK_MAX),
-                    ));
-                    send(&EventType::ButtonRelease(button));
-                }
-                ClickButton::Key(key) => {
-                    send(&EventType::KeyPress(key));
-                    thread::sleep(Duration::from_millis(
-                        rng_thread.random_range(DURATION_CLICK_MIN..DURATION_CLICK_MAX),
-                    ));
-                    send(&EventType::KeyRelease(key));
-                }
-            }
+
+            // Press, hold for a randomized human-like duration, then release
+            let hold = Duration::from_millis(
+                rng_thread.random_range(DURATION_CLICK_MIN..DURATION_CLICK_MAX),
+            );
+            click_once(click_info.click_btn, Some(hold));
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sanitize_string_keeps_digits_only() {
+        let mut s = String::from("1a2b3");
+        sanitize_string(&mut s, 10);
+        assert_eq!(s, "123");
+    }
+
+    #[test]
+    fn sanitize_string_strips_leading_zeros() {
+        let mut s = String::from("007");
+        sanitize_string(&mut s, 10);
+        assert_eq!(s, "7");
+    }
+
+    #[test]
+    fn sanitize_string_keeps_a_single_zero() {
+        let mut s = String::from("0");
+        sanitize_string(&mut s, 10);
+        assert_eq!(s, "0");
+    }
+
+    #[test]
+    fn sanitize_string_truncates_to_max_length() {
+        let mut s = String::from("123456789");
+        sanitize_string(&mut s, 5);
+        assert_eq!(s, "12345");
+    }
+
+    #[test]
+    fn sanitize_i64_string_trims_and_keeps_sign() {
+        let mut s = String::from("  -5 ");
+        sanitize_i64_string(&mut s, 7);
+        assert_eq!(s, "-5");
+    }
+
+    #[test]
+    fn sanitize_i64_string_falls_back_to_zero_on_garbage() {
+        let mut s = String::from("abc");
+        sanitize_i64_string(&mut s, 7);
+        assert_eq!(s, "0");
+    }
+
+    #[test]
+    fn truncate_string_trims_when_too_long() {
+        let mut s = String::from("123456");
+        truncate_string(&mut s, 5);
+        assert_eq!(s, "12345");
+    }
+
+    #[test]
+    fn truncate_string_leaves_short_strings_untouched() {
+        let mut s = String::from("12");
+        truncate_string(&mut s, 5);
+        assert_eq!(s, "12");
+    }
+
+    #[test]
+    fn interval_ms_combines_units() {
+        assert_eq!(interval_ms(0, 0, 0, 100), 100);
+        assert_eq!(interval_ms(1, 0, 0, 0), 3_600_000);
+        assert_eq!(interval_ms(0, 1, 1, 1), 61_001);
+    }
+
+    #[test]
+    fn movement_delay_ms_combines_units() {
+        assert_eq!(movement_delay_ms(0, 20), 20);
+        assert_eq!(movement_delay_ms(1, 0), 1_000);
+        assert_eq!(movement_delay_ms(2, 5), 2_005);
     }
 }

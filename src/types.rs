@@ -8,6 +8,17 @@ pub enum AppMode {
     Humanlike,
 }
 
+/// Mutually-exclusive interaction states; exactly one is active at a time,
+/// which makes "two modes at once" unrepresentable.
+#[derive(PartialEq, Eq, Debug, Copy, Clone)]
+pub enum InteractionMode {
+    Idle,
+    Autoclicking,
+    SettingCoord,
+    SettingAutoclickKey,
+    SettingSetCoordKey,
+}
+
 #[derive(PartialEq, Copy, Clone)]
 pub struct ClickInfo {
     pub click_btn: ClickButton,
@@ -28,6 +39,16 @@ pub enum ClickType {
     Double,
 }
 
+impl ClickType {
+    /// Number of press/release cycles performed per autoclick tick.
+    pub const fn run_count(self) -> u8 {
+        match self {
+            ClickType::Single => 1,
+            ClickType::Double => 2,
+        }
+    }
+}
+
 #[derive(PartialEq, Copy, Clone, Debug)]
 pub enum ClickButton {
     Mouse(Button),
@@ -40,5 +61,16 @@ impl fmt::Display for ClickButton {
             ClickButton::Mouse(button) => write!(f, "{button:?}"),
             ClickButton::Key(key) => write!(f, "{key:?}"),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn run_count_matches_click_type() {
+        assert_eq!(ClickType::Single.run_count(), 1);
+        assert_eq!(ClickType::Double.run_count(), 2);
     }
 }

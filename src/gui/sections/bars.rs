@@ -1,30 +1,25 @@
-use eframe::egui::{self};
+use eframe::egui;
 
-use crate::{RustyAutoClickerApp, types::AppMode};
+use crate::{
+    RustyAutoClickerApp,
+    types::{AppMode, InteractionMode},
+};
 
 impl RustyAutoClickerApp {
     pub fn show_topbar(&mut self, ui: &mut egui::Ui) {
         egui::Panel::top("top_panel").show_inside(ui, |ui| {
             // The top panel is often a good place for a menu bar:
             egui::MenuBar::new().ui(ui, |ui| {
-                if self.is_autoclicking {
-                    if ui
-                        .button(format!("🖱 STOP ({})", self.key_autoclick.unwrap()))
-                        .clicked()
-                    {
-                        self.is_autoclicking = false;
+                if self.is_autoclicking() {
+                    if ui.button(self.autoclick_button_label()).clicked() {
+                        self.mode = InteractionMode::Idle;
                     };
                 } else {
                     if self.hotkey_window_open {
                         ui.disable();
                     }
-                    let text: String = if let Some(hotkey) = self.key_autoclick {
-                        format!("🖱 START ({hotkey})")
-                    } else {
-                        "🖱 START".to_string()
-                    };
-                    if ui.button(text).clicked() {
-                        self.is_autoclicking = true
+                    if ui.button(self.autoclick_button_label()).clicked() {
+                        self.start_autoclick(0u64);
                     }
                 }
 
@@ -32,7 +27,7 @@ impl RustyAutoClickerApp {
                 ui.label("Settings: ");
 
                 if ui
-                    .add_enabled(!self.is_autoclicking, egui::Button::new("⌨ Hotkeys"))
+                    .add_enabled(!self.is_autoclicking(), egui::Button::new("⌨ Hotkeys"))
                     .clicked()
                 {
                     self.hotkey_window_open = true
@@ -41,14 +36,9 @@ impl RustyAutoClickerApp {
                 ui.separator();
                 ui.label("App Mode: ");
 
-                if self.is_autoclicking || self.hotkey_window_open {
-                    ui.disable();
-                };
+                self.disable_if_busy(ui);
                 ui.selectable_value(&mut self.app_mode, AppMode::Bot, "🖥 Bot")
                     .on_hover_text("Autoclick as fast as possible");
-                if self.is_autoclicking || self.hotkey_window_open {
-                    ui.disable();
-                };
                 ui.selectable_value(&mut self.app_mode, AppMode::Humanlike, "😆 Humanlike")
                     .on_hover_text("Autoclick emulating human clicking");
             });

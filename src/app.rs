@@ -7,7 +7,8 @@ use rdev::Button;
 
 use crate::{
     defines::*,
-    types::{AppMode, ClickButton, ClickPosition, ClickType},
+    types::{AppMode, ClickButton, ClickPosition, ClickType, InteractionMode},
+    utils::{interval_ms, movement_delay_ms, sanitize_i64_string, sanitize_string},
 };
 
 pub struct RustyAutoClickerApp {
@@ -33,11 +34,8 @@ pub struct RustyAutoClickerApp {
     pub key_autoclick: Option<Keycode>,
     pub key_set_coord: Option<Keycode>,
 
-    // App state
-    pub is_autoclicking: bool,
-    pub is_setting_coord: bool,
-    pub is_setting_autoclick_key: bool,
-    pub is_setting_set_coord_key: bool,
+    // Interaction state (mutually exclusive)
+    pub mode: InteractionMode,
 
     // App mode
     pub app_mode: AppMode,
@@ -88,11 +86,8 @@ impl Default for RustyAutoClickerApp {
             key_autoclick: HOTKEY_AUTOCLICK,
             key_set_coord: HOTKEY_SET_COORD,
 
-            // App state
-            is_autoclicking: false,
-            is_setting_coord: false,
-            is_setting_autoclick_key: false,
-            is_setting_set_coord_key: false,
+            // Interaction state
+            mode: InteractionMode::Idle,
 
             // App mode
             app_mode: AppMode::Bot,
@@ -136,13 +131,99 @@ impl RustyAutoClickerApp {
         Default::default()
     }
 
+    /// Whether an autoclick run is currently in progress.
+    pub fn is_autoclicking(&self) -> bool {
+        matches!(self.mode, InteractionMode::Autoclicking)
+    }
+
+    /// Whether interactive widgets should be disabled: an autoclick run is in
+    /// progress or the hotkeys window is open.
+    pub fn is_busy(&self) -> bool {
+        self.is_autoclicking() || self.hotkey_window_open
+    }
+
+    /// Whether the app is idle: not autoclicking and not in any key-capture or
+    /// coordinate-setting mode.
+    pub fn is_idle(&self) -> bool {
+        matches!(self.mode, InteractionMode::Idle)
+    }
+
+    /// Disable the remaining widgets in `ui`'s current container while the app
+    /// [`is_busy`](Self::is_busy). egui's `disable()` is container-scoped and
+    /// permanent, so this mirrors the inline guard it replaces.
+    pub fn disable_if_busy(&self, ui: &mut egui::Ui) {
+        if self.is_busy() {
+            ui.disable();
+        }
+    }
+
+    /// Label for the start/stop autoclick button, e.g. `🖱 START (F6)`,
+    /// `🖱 STOP (F6)`, or `🖱 START` when no hotkey is set.
+    pub fn autoclick_button_label(&self) -> String {
+        let verb = if self.is_autoclicking() {
+            "STOP"
+        } else {
+            "START"
+        };
+        match self.key_autoclick {
+            Some(hotkey) => format!("🖱 {verb} ({hotkey})"),
+            None => format!("🖱 {verb}"),
+        }
+    }
+
+    /// Sanitize all numeric input strings in place: the time, amount, and
+    /// movement fields accept digits only; the X/Y coordinate fields accept a
+    /// signed integer.
+    pub fn sanitize_inputs(&mut self) {
+        sanitize_string(&mut self.hr_str, INPUT_LEN_TIME);
+        sanitize_string(&mut self.min_str, INPUT_LEN_TIME);
+        sanitize_string(&mut self.sec_str, INPUT_LEN_TIME);
+        sanitize_string(&mut self.ms_str, INPUT_LEN_TIME);
+        sanitize_string(&mut self.click_amount_str, INPUT_LEN_TIME);
+        sanitize_i64_string(&mut self.click_x_str, INPUT_LEN_COORD);
+        sanitize_i64_string(&mut self.click_y_str, INPUT_LEN_COORD);
+        sanitize_string(&mut self.movement_sec_str, INPUT_LEN_TIME);
+        sanitize_string(&mut self.movement_ms_str, INPUT_LEN_TIME);
+    }
+
+    /// Total click interval in milliseconds, parsed from the hr/min/sec/ms fields.
+    pub fn parsed_interval_ms(&self) -> u64 {
+        interval_ms(
+            self.hr_str.parse().unwrap_or_default(),
+            self.min_str.parse().unwrap_or_default(),
+            self.sec_str.parse().unwrap_or_default(),
+            self.ms_str.parse().unwrap_or_default(),
+        )
+    }
+
+    /// Mouse-movement delay in milliseconds, parsed from the movement fields.
+    pub fn parsed_movement_delay_ms(&self) -> u64 {
+        movement_delay_ms(
+            self.movement_sec_str.parse().unwrap_or_default(),
+            self.movement_ms_str.parse().unwrap_or_default(),
+        )
+    }
+
+    /// Number of clicks to perform; `0` means "click forever".
+    pub fn parsed_click_amount(&self) -> u64 {
+        self.click_amount_str.parse().unwrap_or_default()
+    }
+
+    /// Target click coordinates, parsed from the X/Y fields.
+    pub fn parsed_click_coord(&self) -> (f64, f64) {
+        (
+            self.click_x_str.parse().unwrap_or_default(),
+            self.click_y_str.parse().unwrap_or_default(),
+        )
+    }
+
     /// Enter the coordinate setting mode
     ///
     /// # Arguments
     ///
     /// * `ctx` - The ctx to manipulate
     pub fn enter_coordinate_setting(&mut self, ctx: &egui::Context) {
-        self.is_setting_coord = true;
+        self.mode = InteractionMode::SettingCoord;
         self.window_position =
             ctx.input(|input_state| input_state.viewport().outer_rect.unwrap().min);
         ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(egui::vec2(400f32, 30f32)));
@@ -156,11 +237,9 @@ impl RustyAutoClickerApp {
     /// * `ctx` - The ctx to set the window position on
     pub fn follow_cursor(&mut self, ctx: &egui::Context) {
         let offset = egui::Vec2 { x: 15f32, y: 15f32 };
+        let (click_x, click_y) = self.parsed_click_coord();
         ctx.send_viewport_cmd(egui::ViewportCommand::OuterPosition(
-            egui::pos2(
-                self.click_x_str.parse().unwrap(),
-                self.click_y_str.parse().unwrap(),
-            ) + offset,
+            egui::pos2(click_x as f32, click_y as f32) + offset,
         ));
     }
 
@@ -177,7 +256,7 @@ impl RustyAutoClickerApp {
         )));
         ctx.send_viewport_cmd(egui::ViewportCommand::OuterPosition(self.window_position));
 
-        self.is_setting_coord = false;
+        self.mode = InteractionMode::Idle;
         self.click_position = ClickPosition::Coord;
     }
 
@@ -188,7 +267,7 @@ impl RustyAutoClickerApp {
     /// * `negative_click_start_offset` - The offset to start the click counter at
     pub fn start_autoclick(&mut self, negative_click_start_offset: u64) {
         self.click_counter = 0u64;
-        self.is_autoclicking = !self.is_autoclicking;
+        self.mode = InteractionMode::Autoclicking;
         self.rng_thread = rng();
 
         self.last_now = Instant::now()

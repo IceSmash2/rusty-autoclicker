@@ -1,9 +1,10 @@
 use eframe::egui::{self, Context};
 
-use crate::RustyAutoClickerApp;
+use crate::{RustyAutoClickerApp, types::InteractionMode};
 
 impl RustyAutoClickerApp {
     pub fn show_hotkeys_window(&mut self, ctx: &Context) {
+        let idle = self.is_idle();
         egui::Window::new("Hotkeys")
             .fixed_size(egui::vec2(220f32, 100f32))
             .anchor(egui::Align2::CENTER_CENTER, [0f32, 0f32])
@@ -19,12 +20,8 @@ impl RustyAutoClickerApp {
                         .clicked()
                     {
                         // Allow keybind only if app is not busy
-                        if !self.is_autoclicking
-                            && !self.is_setting_autoclick_key
-                            && !self.is_setting_coord
-                            && !self.is_setting_set_coord_key
-                        {
-                            self.is_setting_autoclick_key = true;
+                        if idle {
+                            self.mode = InteractionMode::SettingAutoclickKey;
                             self.key_autoclick = None;
                         }
                     };
@@ -48,13 +45,9 @@ impl RustyAutoClickerApp {
                         .clicked()
                     {
                         // Allow keybind only if app is not busy
-                        if !self.is_autoclicking
-                            && !self.is_setting_autoclick_key
-                            && !self.is_setting_coord
-                            && !self.is_setting_set_coord_key
-                        {
+                        if idle {
                             self.key_set_coord = None;
-                            self.is_setting_set_coord_key = true;
+                            self.mode = InteractionMode::SettingSetCoordKey;
                         }
                     };
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {

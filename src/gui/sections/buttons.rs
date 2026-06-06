@@ -1,4 +1,4 @@
-use eframe::egui::{self};
+use eframe::egui;
 use rdev::{Button, Key};
 
 use crate::{RustyAutoClickerApp, types::ClickButton};

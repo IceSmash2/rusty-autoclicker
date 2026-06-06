@@ -35,6 +35,10 @@ pub const DEFAULT_CLICK_Y_STR: &str = "0";
 pub const DEFAULT_MOVEMENT_SEC_STR: &str = "0";
 pub const DEFAULT_MOVEMENT_MS_STR: &str = "20";
 
+// Maximum lengths for sanitized numeric inputs
+pub const INPUT_LEN_TIME: usize = 5;
+pub const INPUT_LEN_COORD: usize = 7;
+
 // Hotkeys
 pub const HOTKEY_AUTOCLICK: Option<Keycode> = Some(Keycode::F6);
 pub const HOTKEY_SET_COORD: Option<Keycode> = Some(Keycode::Escape);

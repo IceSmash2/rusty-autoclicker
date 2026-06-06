@@ -1,7 +1,7 @@
 use device_query::{Keycode, MouseState};
-use eframe::egui::{self};
+use eframe::egui;
 
-use crate::RustyAutoClickerApp;
+use crate::{RustyAutoClickerApp, types::InteractionMode};
 
 mod bars;
 mod buttons;
@@ -14,9 +14,7 @@ impl RustyAutoClickerApp {
 
             ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {
                 ui.label("ms");
-                if self.is_autoclicking || self.hotkey_window_open {
-                    ui.disable();
-                };
+                self.disable_if_busy(ui);
                 ui.add(
                     egui::TextEdit::singleline(&mut self.movement_ms_str)
                         .desired_width(40.0f32)
@@ -24,9 +22,6 @@ impl RustyAutoClickerApp {
                 );
 
                 ui.label("sec");
-                if self.is_autoclicking || self.hotkey_window_open {
-                    ui.disable();
-                };
                 ui.add(
                     egui::TextEdit::singleline(&mut self.movement_sec_str)
                         .desired_width(40.0f32)
@@ -63,26 +58,23 @@ impl RustyAutoClickerApp {
         ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
             if self.hotkey_window_open {
                 ui.disable();
-            } else if self.is_autoclicking {
+            } else if self.is_autoclicking() {
                 ui.add_sized(
                     [120.0f32, 38.0f32],
-                    egui::widgets::Button::new(format!("🖱 STOP ({})", self.key_autoclick.unwrap())),
+                    egui::widgets::Button::new(self.autoclick_button_label()),
                 )
                 .clicked()
-                .then(|| self.is_autoclicking = false);
+                .then(|| self.mode = InteractionMode::Idle);
             } else {
-                let text: String = if let Some(hotkey) = self.key_autoclick {
-                    format!("🖱 START ({hotkey})")
-                } else {
-                    "🖱 START".to_string()
-                };
-                ui.add_sized([120.0f32, 38.0f32], egui::widgets::Button::new(text))
-                    .clicked()
-                    .then(|| {
-                        // Start autoclick, first click is delayed
-                        Self::start_autoclick(self, 0u64);
-                        self.is_autoclicking = true
-                    });
+                ui.add_sized(
+                    [120.0f32, 38.0f32],
+                    egui::widgets::Button::new(self.autoclick_button_label()),
+                )
+                .clicked()
+                .then(|| {
+                    // Start autoclick, first click is delayed
+                    self.start_autoclick(0u64);
+                });
             }
         });
     }

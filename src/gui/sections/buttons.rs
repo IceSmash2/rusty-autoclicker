@@ -59,11 +59,14 @@ impl RustyAutoClickerApp {
                         ClickButton::Mouse(Button::Right),
                         "Right",
                     );
-                    ui.selectable_value(
-                        &mut self.click_btn,
-                        ClickButton::Mouse(Button::Middle),
-                        "Middle",
-                    );
+                    // rdev's macOS backend can only simulate Left/Right.
+                    if !cfg!(target_os = "macos") {
+                        ui.selectable_value(
+                            &mut self.click_btn,
+                            ClickButton::Mouse(Button::Middle),
+                            "Middle",
+                        );
+                    }
                 });
         });
     }

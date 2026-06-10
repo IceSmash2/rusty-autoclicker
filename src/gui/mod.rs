@@ -79,7 +79,7 @@ impl RustyAutoClickerApp {
         interval: u64,
         click_amount: u64,
         click_coord: (f64, f64),
-        movement_delay_in_ms: u64,
+        speed_range: (f64, f64),
         mouse_coord: (i32, i32),
     ) -> bool {
         let since_last = now
@@ -105,7 +105,7 @@ impl RustyAutoClickerApp {
                 click_type: self.click_type,
             },
             mouse_coord,
-            movement_delay_in_ms,
+            speed_range,
             self.rng_thread.clone(),
         );
 
@@ -193,7 +193,7 @@ impl eframe::App for RustyAutoClickerApp {
         // Sanitize the numeric input strings, then parse the values needed this pass
         self.sanitize_inputs();
         let interval = self.parsed_interval_ms();
-        let movement_delay_in_ms = self.parsed_movement_delay_ms();
+        let speed_range = self.parsed_speed_range();
         let click_amount = self.parsed_click_amount();
         let click_coord = self.parsed_click_coord();
 
@@ -210,7 +210,7 @@ impl eframe::App for RustyAutoClickerApp {
             interval,
             click_amount,
             click_coord,
-            movement_delay_in_ms,
+            speed_range,
             mouse.coords,
         ) {
             if matches!(self.mode, InteractionMode::SettingAutoclickKey)
@@ -309,7 +309,7 @@ impl eframe::App for RustyAutoClickerApp {
                 // The central panel the region left after adding TopPanel's and SidePanel's
                 self.show_click_interval(ui);
                 ui.separator();
-                self.show_movement_delay(ui);
+                self.show_movement_speed(ui);
                 ui.separator();
                 self.show_buttons(ui);
                 ui.separator();

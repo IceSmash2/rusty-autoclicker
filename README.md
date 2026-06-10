@@ -46,11 +46,11 @@ Features that currently are or will be implemented.
 - [x] Free and Open Source Software
 - [x] Bot Mode
 - [ ] Humanlike Mode
-  - [ ] Tweening when moving to desired click position
+  - [x] Tweening when moving to desired click position
   - [x] Randomizing time between clicks
   - [x] Randomizing click duration
   - [ ] Random mouse movement between clicks (if click interval permits)
-  - [ ] Setting for min/max move speed
+  - [x] Setting for min/max move speed
 - [x] Mouse & Preset Coordinates Mode
 - [x] Infinite & fixed click amount
 - [x] Left/Middle/Right mouse clicks

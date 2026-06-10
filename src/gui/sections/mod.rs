@@ -1,31 +1,35 @@
 use device_query::{Keycode, MouseState};
 use eframe::egui;
 
-use crate::{RustyAutoClickerApp, types::InteractionMode};
+use crate::{
+    RustyAutoClickerApp,
+    defines::{MOUSE_TWEEN_SPEED_MAX_PX_S, MOUSE_TWEEN_SPEED_MIN_PX_S},
+    types::InteractionMode,
+};
 
 mod bars;
 mod buttons;
 mod click_config;
 
 impl RustyAutoClickerApp {
-    pub fn show_movement_delay(&mut self, ui: &mut egui::Ui) {
+    pub fn show_movement_speed(&mut self, ui: &mut egui::Ui) {
         ui.horizontal_wrapped(|ui| {
-            ui.label("Movement delay (Humanlike only)");
+            ui.label("Movement speed (Humanlike only)");
 
             ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {
-                ui.label("ms");
+                ui.label("px/s");
                 self.disable_if_busy(ui);
                 ui.add(
-                    egui::TextEdit::singleline(&mut self.movement_ms_str)
+                    egui::TextEdit::singleline(&mut self.speed_max_str)
                         .desired_width(40.0f32)
-                        .hint_text("20"),
+                        .hint_text(MOUSE_TWEEN_SPEED_MAX_PX_S.to_string()),
                 );
 
-                ui.label("sec");
+                ui.label("to");
                 ui.add(
-                    egui::TextEdit::singleline(&mut self.movement_sec_str)
+                    egui::TextEdit::singleline(&mut self.speed_min_str)
                         .desired_width(40.0f32)
-                        .hint_text("0"),
+                        .hint_text(MOUSE_TWEEN_SPEED_MIN_PX_S.to_string()),
                 );
             });
         });

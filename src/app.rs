@@ -9,8 +9,8 @@ use crate::{
     defines::*,
     types::{AppMode, ClickButton, ClickPosition, ClickType, InteractionMode},
     utils::{
-        interval_ms, move_mouse_to, movement_delay_ms, press_button, release_button,
-        sanitize_i64_string, sanitize_string,
+        interval_ms, move_mouse_to, press_button, release_button, sanitize_i64_string,
+        sanitize_string,
     },
 };
 
@@ -23,8 +23,8 @@ pub struct RustyAutoClickerApp {
     pub click_amount_str: String,
     pub click_x_str: String,
     pub click_y_str: String,
-    pub movement_sec_str: String,
-    pub movement_ms_str: String,
+    pub speed_min_str: String,
+    pub speed_max_str: String,
 
     // Time
     pub last_now: Instant,
@@ -80,8 +80,8 @@ impl Default for RustyAutoClickerApp {
             click_amount_str: DEFAULT_CLICK_AMOUNT_STR.to_owned(),
             click_x_str: DEFAULT_CLICK_X_STR.to_owned(),
             click_y_str: DEFAULT_CLICK_Y_STR.to_owned(),
-            movement_sec_str: DEFAULT_MOVEMENT_SEC_STR.to_owned(),
-            movement_ms_str: DEFAULT_MOVEMENT_MS_STR.to_owned(),
+            speed_min_str: MOUSE_TWEEN_SPEED_MIN_PX_S.to_string(),
+            speed_max_str: MOUSE_TWEEN_SPEED_MAX_PX_S.to_string(),
 
             // Time
             last_now: Instant::now(),
@@ -200,7 +200,7 @@ impl RustyAutoClickerApp {
     }
 
     /// Sanitize all numeric input strings in place: the time, amount, and
-    /// movement fields accept digits only; the X/Y coordinate fields accept a
+    /// speed fields accept digits only; the X/Y coordinate fields accept a
     /// signed integer.
     pub fn sanitize_inputs(&mut self) {
         sanitize_string(&mut self.hr_str, INPUT_LEN_TIME);
@@ -210,8 +210,8 @@ impl RustyAutoClickerApp {
         sanitize_string(&mut self.click_amount_str, INPUT_LEN_TIME);
         sanitize_i64_string(&mut self.click_x_str, INPUT_LEN_COORD);
         sanitize_i64_string(&mut self.click_y_str, INPUT_LEN_COORD);
-        sanitize_string(&mut self.movement_sec_str, INPUT_LEN_TIME);
-        sanitize_string(&mut self.movement_ms_str, INPUT_LEN_TIME);
+        sanitize_string(&mut self.speed_min_str, INPUT_LEN_TIME);
+        sanitize_string(&mut self.speed_max_str, INPUT_LEN_TIME);
     }
 
     /// Total click interval in milliseconds, parsed from the hr/min/sec/ms fields.
@@ -224,12 +224,22 @@ impl RustyAutoClickerApp {
         )
     }
 
-    /// Mouse-movement delay in milliseconds, parsed from the movement fields.
-    pub fn parsed_movement_delay_ms(&self) -> u64 {
-        movement_delay_ms(
-            self.movement_sec_str.parse().unwrap_or_default(),
-            self.movement_ms_str.parse().unwrap_or_default(),
-        )
+    /// Humanlike glide speed range in px/s, parsed from the speed fields.
+    /// Empty input falls back to the defaults; the minimum is kept at least
+    /// 1 px/s and the maximum at least the minimum, so the range is never
+    /// empty or zero.
+    pub fn parsed_speed_range(&self) -> (f64, f64) {
+        let min = self
+            .speed_min_str
+            .parse()
+            .unwrap_or(MOUSE_TWEEN_SPEED_MIN_PX_S)
+            .max(1.0);
+        let max = self
+            .speed_max_str
+            .parse()
+            .unwrap_or(MOUSE_TWEEN_SPEED_MAX_PX_S)
+            .max(min);
+        (min, max)
     }
 
     /// Number of clicks to perform; `0` means "click forever".
@@ -310,7 +320,8 @@ impl RustyAutoClickerApp {
                 self.app_mode,
                 self.parsed_click_coord(),
                 self.mouse.coords,
-                self.parsed_movement_delay_ms(),
+                self.parsed_speed_range(),
+                &mut self.rng_thread,
             );
         }
         press_button(self.click_btn);

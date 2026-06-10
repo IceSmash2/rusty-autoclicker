@@ -158,23 +158,60 @@ fn move_to(click_coord: (f64, f64), start_coords: (f64, f64), movement_delay_in_
     }
 }
 
-fn click_once(button: ClickButton, hold: Option<Duration>) {
-    match button {
-        ClickButton::Mouse(button) => {
-            send(&EventType::ButtonPress(button));
-            if let Some(hold) = hold {
-                thread::sleep(hold);
+/// Move the mouse to `click_coord`, honoring the app mode: an instant jump in
+/// [`Bot`](AppMode::Bot), or a step-wise humanlike glide in
+/// [`Humanlike`](AppMode::Humanlike) (skipped when already at the target).
+/// Shared by autoclick and click-and-hold.
+///
+/// # Arguments
+///
+/// * `app_mode` - The app mode
+/// * `click_coord` - The target coordinates
+/// * `start_coords` - The current mouse coordinates (humanlike start point)
+/// * `movement_delay_in_ms` - The delay between mouse movements in milliseconds
+pub fn move_mouse_to(
+    app_mode: AppMode,
+    click_coord: (f64, f64),
+    start_coords: (i32, i32),
+    movement_delay_in_ms: u64,
+) {
+    match app_mode {
+        AppMode::Bot => send(&EventType::MouseMove {
+            x: click_coord.0,
+            y: click_coord.1,
+        }),
+        AppMode::Humanlike => {
+            let start = (start_coords.0.to_f64(), start_coords.1.to_f64());
+            // only move if start pos and click pos are not identical
+            if click_coord.0 != start.0 || click_coord.1 != start.1 {
+                move_to(click_coord, start, movement_delay_in_ms);
             }
-            send(&EventType::ButtonRelease(button));
-        }
-        ClickButton::Key(key) => {
-            send(&EventType::KeyPress(key));
-            if let Some(hold) = hold {
-                thread::sleep(hold);
-            }
-            send(&EventType::KeyRelease(key));
         }
     }
+}
+
+/// Press the button/key down without releasing it (used by click-and-hold).
+pub fn press_button(button: ClickButton) {
+    match button {
+        ClickButton::Mouse(button) => send(&EventType::ButtonPress(button)),
+        ClickButton::Key(key) => send(&EventType::KeyPress(key)),
+    }
+}
+
+/// Release a previously pressed button/key (used by click-and-hold).
+pub fn release_button(button: ClickButton) {
+    match button {
+        ClickButton::Mouse(button) => send(&EventType::ButtonRelease(button)),
+        ClickButton::Key(key) => send(&EventType::KeyRelease(key)),
+    }
+}
+
+fn click_once(button: ClickButton, hold: Option<Duration>) {
+    press_button(button);
+    if let Some(hold) = hold {
+        thread::sleep(hold);
+    }
+    release_button(button);
 }
 
 /// Autoclick the mouse
@@ -201,25 +238,25 @@ pub fn autoclick(
         for _n in 1..=run_amount {
             // Move mouse to saved coordinates if requested
             if click_info.click_position == ClickPosition::Coord {
-                send(&EventType::MouseMove {
-                    x: click_info.click_coord.0,
-                    y: click_info.click_coord.1,
-                })
+                move_mouse_to(
+                    app_mode,
+                    click_info.click_coord,
+                    mouse_coord,
+                    movement_delay_in_ms,
+                );
             }
             click_once(click_info.click_btn, None);
         }
     // Autoclick to emulate a humanlike clicks
     } else if app_mode == AppMode::Humanlike {
-        let click_x = click_info.click_coord.0;
-        let click_y = click_info.click_coord.1;
         // move to target
         #[cfg(debug_assertions)]
         println!(
             "Moving from {:?}/{:?} towards: {:?}/{:?}",
             mouse_coord.0.to_f64(),
             mouse_coord.1.to_f64(),
-            click_x,
-            click_y
+            click_info.click_coord.0,
+            click_info.click_coord.1
         );
 
         // perform clicks
@@ -233,14 +270,12 @@ pub fn autoclick(
 
             // Move mouse to saved coordinates if requested
             if click_info.click_position == ClickPosition::Coord {
-                // only move if start pos and click pos are not identical
-                if click_x != mouse_coord.0.to_f64() || click_y != mouse_coord.1.to_f64() {
-                    move_to(
-                        (click_x, click_y),
-                        (mouse_coord.0.to_f64(), mouse_coord.1.to_f64()),
-                        movement_delay_in_ms,
-                    );
-                }
+                move_mouse_to(
+                    app_mode,
+                    click_info.click_coord,
+                    mouse_coord,
+                    movement_delay_in_ms,
+                );
             }
 
             // Press, hold for a randomized human-like duration, then release

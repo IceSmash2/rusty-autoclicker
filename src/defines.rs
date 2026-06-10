@@ -42,3 +42,4 @@ pub const INPUT_LEN_COORD: usize = 7;
 // Hotkeys
 pub const HOTKEY_AUTOCLICK: Option<Keycode> = Some(Keycode::F6);
 pub const HOTKEY_SET_COORD: Option<Keycode> = Some(Keycode::Escape);
+pub const HOTKEY_HOLD: Option<Keycode> = Some(Keycode::F7);

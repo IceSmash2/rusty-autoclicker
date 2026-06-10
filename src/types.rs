@@ -14,9 +14,11 @@ pub enum AppMode {
 pub enum InteractionMode {
     Idle,
     Autoclicking,
+    Holding,
     SettingCoord,
     SettingAutoclickKey,
     SettingSetCoordKey,
+    SettingHoldKey,
 }
 
 #[derive(PartialEq, Copy, Clone)]

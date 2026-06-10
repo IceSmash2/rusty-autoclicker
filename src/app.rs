@@ -8,7 +8,10 @@ use rdev::Button;
 use crate::{
     defines::*,
     types::{AppMode, ClickButton, ClickPosition, ClickType, InteractionMode},
-    utils::{interval_ms, movement_delay_ms, sanitize_i64_string, sanitize_string},
+    utils::{
+        interval_ms, move_mouse_to, movement_delay_ms, press_button, release_button,
+        sanitize_i64_string, sanitize_string,
+    },
 };
 
 pub struct RustyAutoClickerApp {
@@ -33,9 +36,13 @@ pub struct RustyAutoClickerApp {
     // Hotkeys
     pub key_autoclick: Option<Keycode>,
     pub key_set_coord: Option<Keycode>,
+    pub key_hold: Option<Keycode>,
 
     // Interaction state (mutually exclusive)
     pub mode: InteractionMode,
+
+    // The button currently held down (click-and-hold), if any
+    pub held_button: Option<ClickButton>,
 
     // App mode
     pub app_mode: AppMode,
@@ -48,6 +55,7 @@ pub struct RustyAutoClickerApp {
     pub key_pressed_autoclick: bool,
     pub key_pressed_set_coord: bool,
     pub key_pressed_esc: bool,
+    pub key_pressed_hold: bool,
     pub keys_pressed: Option<Vec<Keycode>>,
 
     // Mouse snapshot (polled in `logic`, displayed in `ui`)
@@ -85,9 +93,13 @@ impl Default for RustyAutoClickerApp {
             // Hotkeys
             key_autoclick: HOTKEY_AUTOCLICK,
             key_set_coord: HOTKEY_SET_COORD,
+            key_hold: HOTKEY_HOLD,
 
             // Interaction state
             mode: InteractionMode::Idle,
+
+            // No button held initially
+            held_button: None,
 
             // App mode
             app_mode: AppMode::Bot,
@@ -100,6 +112,7 @@ impl Default for RustyAutoClickerApp {
             key_pressed_autoclick: false,
             key_pressed_set_coord: false,
             key_pressed_esc: false,
+            key_pressed_hold: false,
             keys_pressed: None,
 
             // Mouse snapshot
@@ -136,10 +149,15 @@ impl RustyAutoClickerApp {
         matches!(self.mode, InteractionMode::Autoclicking)
     }
 
-    /// Whether interactive widgets should be disabled: an autoclick run is in
-    /// progress or the hotkeys window is open.
+    /// Whether a button is currently held down via click-and-hold.
+    pub fn is_holding(&self) -> bool {
+        matches!(self.mode, InteractionMode::Holding)
+    }
+
+    /// Whether interactive widgets should be disabled: an autoclick run or a
+    /// click-and-hold is in progress, or the hotkeys window is open.
     pub fn is_busy(&self) -> bool {
-        self.is_autoclicking() || self.hotkey_window_open
+        self.is_autoclicking() || self.is_holding() || self.hotkey_window_open
     }
 
     /// Whether the app is idle: not autoclicking and not in any key-capture or
@@ -168,6 +186,16 @@ impl RustyAutoClickerApp {
         match self.key_autoclick {
             Some(hotkey) => format!("🖱 {verb} ({hotkey})"),
             None => format!("🖱 {verb}"),
+        }
+    }
+
+    /// Label for the click-and-hold button, e.g. `HOLD (F7)`,
+    /// `RELEASE (F7)`, or `HOLD` when no hotkey is set.
+    pub fn hold_button_label(&self) -> String {
+        let verb = if self.is_holding() { "RELEASE" } else { "HOLD" };
+        match self.key_hold {
+            Some(hotkey) => format!("{verb} ({hotkey})"),
+            None => verb.to_string(),
         }
     }
 
@@ -273,5 +301,39 @@ impl RustyAutoClickerApp {
         self.last_now = Instant::now()
             .checked_sub(Duration::from_millis(negative_click_start_offset))
             .unwrap();
+    }
+
+    /// Press the currently selected button down and hold it.
+    pub fn start_hold(&mut self) {
+        if self.click_position == ClickPosition::Coord {
+            move_mouse_to(
+                self.app_mode,
+                self.parsed_click_coord(),
+                self.mouse.coords,
+                self.parsed_movement_delay_ms(),
+            );
+        }
+        press_button(self.click_btn);
+        self.held_button = Some(self.click_btn);
+        self.mode = InteractionMode::Holding;
+    }
+
+    /// Release the held button (if any) and return to idle.
+    pub fn stop_hold(&mut self) {
+        if let Some(button) = self.held_button.take() {
+            release_button(button);
+        }
+        self.mode = InteractionMode::Idle;
+    }
+}
+
+impl Drop for RustyAutoClickerApp {
+    /// Release any button still held when the app shuts down, so quitting
+    /// mid-hold never leaves a button stuck pressed at the OS level. (Does not
+    /// run on a release-build panic, since `panic = "abort"`.)
+    fn drop(&mut self) {
+        if let Some(button) = self.held_button.take() {
+            release_button(button);
+        }
     }
 }

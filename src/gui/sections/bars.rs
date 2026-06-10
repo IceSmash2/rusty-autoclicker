@@ -15,7 +15,7 @@ impl RustyAutoClickerApp {
                         self.mode = InteractionMode::Idle;
                     };
                 } else {
-                    if self.hotkey_window_open {
+                    if self.hotkey_window_open || self.is_holding() {
                         ui.disable();
                     }
                     if ui.button(self.autoclick_button_label()).clicked() {
@@ -27,7 +27,10 @@ impl RustyAutoClickerApp {
                 ui.label("Settings: ");
 
                 if ui
-                    .add_enabled(!self.is_autoclicking(), egui::Button::new("⌨ Hotkeys"))
+                    .add_enabled(
+                        !self.is_autoclicking() && !self.is_holding(),
+                        egui::Button::new("⌨ Hotkeys"),
+                    )
                     .clicked()
                 {
                     self.hotkey_window_open = true

@@ -55,6 +55,21 @@ impl RustyAutoClickerApp {
         }
     }
 
+    /// Toggle click-and-hold when the configured hotkey is pressed and released:
+    /// press the selected button down, then release it on the next press.
+    fn handle_hold_toggle(&mut self, keys: &[Keycode]) {
+        if self.key_hold.is_some() && keys.contains(&self.key_hold.unwrap()) {
+            self.key_pressed_hold = true;
+        } else if self.key_pressed_hold {
+            self.key_pressed_hold = false;
+            if self.is_holding() {
+                self.stop_hold();
+            } else if self.is_idle() && !self.hotkey_window_open {
+                self.start_hold();
+            }
+        }
+    }
+
     /// Fire a click if the interval has elapsed, advancing the counter and
     /// stopping when the requested amount is reached. Returns `true` if a click
     /// was dispatched this pass.
@@ -145,7 +160,9 @@ impl RustyAutoClickerApp {
     /// Force the hotkeys window open while either hotkey is unset.
     fn ensure_hotkey_window(&mut self) {
         if !self.hotkey_window_open
-            && (self.key_autoclick.is_none() || self.key_set_coord.is_none())
+            && (self.key_autoclick.is_none()
+                || self.key_set_coord.is_none()
+                || self.key_hold.is_none())
         {
             self.hotkey_window_open = true;
         }
@@ -185,6 +202,7 @@ impl eframe::App for RustyAutoClickerApp {
         // Sample the clock once, before the toggle, and reuse it for the click timing
         let update_now = Instant::now();
         self.handle_autoclick_toggle(&keys, interval);
+        self.handle_hold_toggle(&keys);
 
         // At most one of these runs per pass (mutually exclusive)
         if !self.dispatch_click(
@@ -209,6 +227,15 @@ impl eframe::App for RustyAutoClickerApp {
             {
                 Self::capture_key(
                     &mut self.key_set_coord,
+                    &mut self.mode,
+                    self.keys_pressed.as_deref(),
+                    &keys,
+                );
+            } else if matches!(self.mode, InteractionMode::SettingHoldKey)
+                && self.keys_pressed.is_some()
+            {
+                Self::capture_key(
+                    &mut self.key_hold,
                     &mut self.mode,
                     self.keys_pressed.as_deref(),
                     &keys,

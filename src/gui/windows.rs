@@ -6,7 +6,7 @@ impl RustyAutoClickerApp {
     pub fn show_hotkeys_window(&mut self, ctx: &Context) {
         let idle = self.is_idle();
         egui::Window::new("Hotkeys")
-            .fixed_size(egui::vec2(220f32, 150f32))
+            .fixed_size(egui::vec2(260f32, 150f32))
             .anchor(egui::Align2::CENTER_CENTER, [0f32, 0f32])
             .collapsible(false)
             .open(&mut self.hotkey_window_open)
@@ -14,7 +14,7 @@ impl RustyAutoClickerApp {
                 ui.horizontal(|ui| {
                     if ui
                         .add_sized(
-                            [100.0f32, 32.0f32],
+                            [120.0f32, 32.0f32],
                             egui::widgets::Button::new("Start/Stop"),
                         )
                         .clicked()
@@ -32,13 +32,13 @@ impl RustyAutoClickerApp {
                         } else {
                             "PRESS ANY KEY".to_string()
                         };
-                        ui.add_sized([110.0f32, 32.0f32], egui::widgets::Button::new(text));
+                        ui.add_sized([130.0f32, 32.0f32], egui::widgets::Button::new(text));
                     });
                 });
                 ui.horizontal(|ui| {
                     if ui
                         .add_sized(
-                            [100.0f32, 32.0f32],
+                            [120.0f32, 32.0f32],
                             egui::widgets::Button::new("Confirm Coords"),
                         )
                         .on_hover_text("Note: L Click cannot be changed")
@@ -57,13 +57,13 @@ impl RustyAutoClickerApp {
                         } else {
                             "PRESS ANY KEY".to_string()
                         };
-                        ui.add_sized([110.0f32, 32.0f32], egui::widgets::Button::new(text));
+                        ui.add_sized([130.0f32, 32.0f32], egui::widgets::Button::new(text));
                     });
                 });
                 ui.horizontal(|ui| {
                     if ui
                         .add_sized(
-                            [100.0f32, 32.0f32],
+                            [120.0f32, 32.0f32],
                             egui::widgets::Button::new("Click & Hold"),
                         )
                         .clicked()
@@ -81,7 +81,7 @@ impl RustyAutoClickerApp {
                         } else {
                             "PRESS ANY KEY".to_string()
                         };
-                        ui.add_sized([110.0f32, 32.0f32], egui::widgets::Button::new(text));
+                        ui.add_sized([130.0f32, 32.0f32], egui::widgets::Button::new(text));
                     });
                 });
             });

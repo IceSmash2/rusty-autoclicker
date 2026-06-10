@@ -25,15 +25,15 @@
 
 ##### Main Interface
 
-[![](/screenshots/v2.1.0/rusty-autoclicker_0dnvDPcANp.png?raw=true "Main Interface")](#)
+[![](/screenshots/v2.5.0/rusty-autoclicker_main_interface.png?raw=true "Main Interface")](#)
 
 ##### Hotkey Change
 
-[![](/screenshots/v2.1.0/rusty-autoclicker_a4asg2fXnT.png?raw=true "Hotkey Change")](#)
+[![](/screenshots/v2.5.0/rusty-autoclicker_hotkey_change.png?raw=true "Hotkey Change")](#)
 
 ##### Setting Coordinates
 
-[![](/screenshots/v2.1.0/rusty-autoclicker_ClJzyc8yHz.png?raw=true "Setting Coordinates")](#)
+[![](/screenshots/v2.5.0/rusty-autoclicker_setting_coordinates.png?raw=true "Setting Coordinates")](#)
 
 </div>
 

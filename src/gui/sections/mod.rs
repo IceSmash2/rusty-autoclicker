@@ -38,24 +38,24 @@ impl RustyAutoClickerApp {
     pub fn show_infos(&self, ui: &mut egui::Ui, mouse: &MouseState, keys: &[Keycode]) {
         let mouse_txt = format!("Mouse position: {:?}", mouse.coords);
         ui.label(mouse_txt);
-        let key_txt = format!("Key pressed: {keys:?}");
-        ui.label(key_txt);
-        let extra_buttons_pressed = mouse
+
+        let buttons_pressed = mouse
             .button_pressed
             .iter()
             .enumerate()
-            .skip(4)
-            .map(|(button_number, pressed)| format!("{button_number:?}-{pressed:?}"))
-            .collect::<Vec<String>>()
-            .join(" ");
+            .skip(1)
+            .filter(|(_, pressed)| **pressed)
+            .map(|(button_number, _)| match button_number {
+                1 => "Left".to_string(),
+                2 => "Right".to_string(),
+                3 => "Middle".to_string(),
+                n => n.to_string(),
+            })
+            .collect::<Vec<String>>();
+        ui.label(format!("Mouse pressed: [{}]", buttons_pressed.join(", ")));
 
-        ui.label(format!(
-            "Mouse pressed: L-{:?} R-{:?} M-{:?} {}",
-            mouse.button_pressed[1],
-            mouse.button_pressed[2],
-            mouse.button_pressed[3],
-            &extra_buttons_pressed
-        ));
+        let key_txt = format!("Key pressed: {keys:?}");
+        ui.label(key_txt);
     }
 
     pub fn show_autoclicker(&mut self, ui: &mut egui::Ui) {

@@ -16,6 +16,7 @@
 
 - [Screenshots](#screenshots-top)
 - [Features and Roadmap](#features--roadmap-top)
+- [Installation](#installation-top)
 - [Building from Source](#building-from-source-top)
 - [Contributing](#contributing-top)
 
@@ -65,6 +66,60 @@ These features are being considered but are not confirmed.
 - Click sequence
 - Profiles (e.g. Profile for a specific app/game)
 - Time-based clicking (e.g. every day/week/fortnight/month at 08:00 am)
+
+## Installation [:top:](#table-of-content)
+
+Prebuilt binaries for Linux, macOS and Windows are attached to every [release](https://github.com/MrTanoshii/rusty-autoclicker/releases).
+
+> [!NOTE]
+> These binaries are **not code-signed or notarized** (that requires a paid Apple Developer account). They are safe, but the OS may warn you on first launch. See the platform notes below.
+
+### macOS (manual download)
+
+Because the binary is unsigned, double-clicking the `.tar.gz` in Finder makes macOS Gatekeeper show *"Apple could not verify … is free of malware"*. To avoid it, **extract from the Terminal instead of Finder** — the command-line `tar` does not propagate the quarantine flag:
+
+```shell
+# Download (curl does not set the quarantine flag either)
+curl -LO https://github.com/MrTanoshii/rusty-autoclicker/releases/latest/download/rusty-autoclicker-macos.tar.gz
+
+# Extract from Terminal (NOT by double-clicking in Finder)
+tar -xzf rusty-autoclicker-macos.tar.gz
+
+./rusty-autoclicker-macos
+```
+
+If you did download/extract via the browser and Finder and already hit the warning, clear the quarantine flag manually:
+
+```shell
+xattr -d com.apple.quarantine ./rusty-autoclicker-macos
+```
+
+…or open it once via **System Settings → Privacy & Security → "Open Anyway"**.
+
+> [!IMPORTANT]
+> macOS requires **Accessibility** *and* **Input Monitoring** permissions for the app to read hotkeys and move/click the mouse. Grant both under **System Settings → Privacy & Security** when prompted.
+
+### Linux (manual download)
+
+```shell
+curl -LO https://github.com/MrTanoshii/rusty-autoclicker/releases/latest/download/rusty-autoclicker-linux.tar.gz
+tar -xzf rusty-autoclicker-linux.tar.gz
+./rusty-autoclicker-linux
+```
+
+### Windows
+
+Download `rusty-autoclicker-windows.exe` from the [latest release](https://github.com/MrTanoshii/rusty-autoclicker/releases/latest) and run it. SmartScreen may warn about an unrecognized publisher — choose **More info → Run anyway**.
+
+### Install from source with Cargo
+
+If you have the [Rust toolchain](https://rustup.rs/), you can build and install directly — locally compiled binaries are never quarantined:
+
+```shell
+cargo install --git https://github.com/MrTanoshii/rusty-autoclicker
+```
+
+On Linux, install the [system dependencies](#linux) first.
 
 ## Building from Source [:top:](#table-of-content)
 

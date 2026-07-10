@@ -1,4 +1,4 @@
-use eframe::egui::{self, Context};
+use eframe::egui;
 
 use crate::{
     RustyAutoClickerApp,
@@ -73,7 +73,7 @@ impl RustyAutoClickerApp {
         });
     }
 
-    pub fn show_click_position(&mut self, ui: &mut egui::Ui, ctx: &Context) {
+    pub fn show_click_position(&mut self, ui: &mut egui::Ui) {
         ui.horizontal_wrapped(|ui| {
             ui.label("Click Position");
             self.disable_if_busy(ui);
@@ -81,7 +81,7 @@ impl RustyAutoClickerApp {
                 .add_sized([80.0f32, 16.0f32], egui::widgets::Button::new("Set Coords"))
                 .clicked()
             {
-                Self::enter_coordinate_setting(self, ctx);
+                self.enter_coordinate_setting(ui.ctx());
             };
             ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {
                 self.disable_if_busy(ui);
@@ -98,19 +98,9 @@ impl RustyAutoClickerApp {
                 );
                 ui.label("X");
 
-                if ui
-                    .selectable_value(&mut self.click_position, ClickPosition::Coord, "Coords")
-                    .clicked()
-                {
-                    self.key_pressed_set_coord = true;
-                };
+                ui.selectable_value(&mut self.click_position, ClickPosition::Coord, "Coords");
                 ui.separator();
-                if ui
-                    .selectable_value(&mut self.click_position, ClickPosition::Mouse, "Mouse")
-                    .clicked()
-                {
-                    self.key_pressed_set_coord = false;
-                };
+                ui.selectable_value(&mut self.click_position, ClickPosition::Mouse, "Mouse");
             });
         });
     }
